@@ -1,0 +1,58 @@
+services:
+  backend:
+    container_name: backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - REACT_APP_REDIRECT_URI=${REACT_APP_REDIRECT_URI:?}
+      - SECRET=${SECRET:?}
+    networks:
+      - trakrtab
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/ping" ]
+      timeout: 15s
+      interval: 10s
+      retries: 5
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    environment:
+      # - REACT_APP_CLIENT_ID=${GOOGLE_CLIENTID:?}
+      - REACT_APP_REDIRECT_URI=${REACT_APP_REDIRECT_URI:?}
+      - REACT_APP_API_URI=${REACT_APP_API_URI:?}
+    networks:
+      - trakrtab
+    ports:
+      - "5173:3000"
+    volumes:
+      - ./web/src:/app/src
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  swagger-ui:
+    container_name: swagger-ui
+    image: swaggerapi/swagger-ui
+    ports:
+        - "3001:8080"
+    volumes:
+        - ./swagger:/usr/share/nginx/html/doc
+    environment:
+        API_URL: doc/swagger.yaml
+
+networks:
+  trakrtab:
+    name: trakrtab_network
+
+volumes:
+  db:
+    driver: local
